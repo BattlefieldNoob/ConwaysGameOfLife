@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -56,5 +57,26 @@ public static class Utils
     }
     
     public static int CoordinateToIndex(int x, int y) => (y * Size) + x;
+    
+    public static int NeighbourCount([ReadOnly] NativeArray<TableJobs.CellState> OriginTable,int cellIndex)
+    {
+        var count = 0;
+        var (xcell, ycell) = IndexToCoordinate(cellIndex);
+
+        for (int i = -1; i < 2; i++)
+        {
+            for (int j = -1; j < 2; j++)
+            {
+                var x = xcell + i;
+                var y = ycell + j;
+                if (!IsPositionValid(x, y) || (x==xcell && y==ycell))
+                    continue;
+
+                count += OriginTable[CoordinateToIndex(x, y)].Alive==State.Alive ? 1 : 0;
+            }
+        }
+
+        return count;
+    }
     
 }

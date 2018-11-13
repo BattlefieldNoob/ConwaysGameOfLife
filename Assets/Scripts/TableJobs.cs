@@ -17,6 +17,9 @@ public class TableJobs : MonoBehaviour
     public float CellSize = 0.5f;
 
     public Cell[] CellTable;
+
+    public float ScrollMultiplier = 4;
+    public Camera camera;
   
     private NativeArray<CellState> OriginArray;
     private NativeArray<CellState> ResultArray;
@@ -24,6 +27,12 @@ public class TableJobs : MonoBehaviour
     private JobHandle EvaluateHandle;
 
     private EvaluateJob _evaluateJob;
+
+
+    private Vector3 MouseOld;
+
+    private bool OldIsValid = false;
+    
 
     public struct CellState
     {
@@ -69,7 +78,6 @@ public class TableJobs : MonoBehaviour
     private void Update()
     {
         ResultArray=new NativeArray<CellState>(size*size,Allocator.Persistent);
-        
 
         _evaluateJob = new EvaluateJob()
         {
@@ -77,22 +85,40 @@ public class TableJobs : MonoBehaviour
             ResultTable = ResultArray
         };
 
-        EvaluateHandle = _evaluateJob.Schedule(OriginArray.Length, 32);
+        EvaluateHandle = _evaluateJob.Schedule(OriginArray.Length, 128);
 
-        HandleComplete();
 
-        ApplyCycle(ResultArray);
+        camera.orthographicSize = Mathf.Clamp(camera.orthographicSize-(Input.mouseScrollDelta.y * Time.deltaTime * ScrollMultiplier),20f,100f);
+
+        if (Input.GetMouseButton(0))
+        {
+            if (!OldIsValid)
+            {
+                MouseOld = Input.mousePosition;
+                OldIsValid = true;
+            }
+            else
+            {
+                var delta = (Input.mousePosition - MouseOld)*Time.deltaTime*((100-camera.orthographicSize)/500);
+                
+                camera.transform.Translate(delta);
+            }
+        }else if (Input.GetMouseButtonUp(0))
+        {
+            MouseOld=Vector3.negativeInfinity;
+            OldIsValid = false;
+        }
         
-        Dispose();
+        
+        
+        EvaluateHandle.Complete();
+        
+        ApplyCycle(ResultArray);
+        OriginArray.Dispose();
         OriginArray = ResultArray;
 
     }
 
-
-    private void HandleComplete()
-    {
-        EvaluateHandle.Complete();
-    }
 
     private void ApplyCycle(NativeArray<CellState> result)
     {
@@ -101,11 +127,6 @@ public class TableJobs : MonoBehaviour
             var cell = CellTable[i];
             cell.mesh.enabled = result[i].Alive==Utils.State.Alive;
         }
-    }
-
-    private void Dispose()
-    {
-        OriginArray.Dispose();
     }
     
 }
