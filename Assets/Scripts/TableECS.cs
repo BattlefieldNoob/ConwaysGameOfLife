@@ -10,25 +10,17 @@ using UnityEngine.Jobs;
 using Random = UnityEngine.Random;
 
 [BurstCompile]
-public class TableJobs : MonoBehaviour
+public class TableECS : MonoBehaviour
 {
-    public Cell CellPrefab;
+    public CellECS CellPrefab;
 
     public int size = 10;
     public float CellSize = 0.5f;
 
-    public Transform[] CellTable;
+    public CellECS[] CellTable;
 
     public float ScrollMultiplier = 4;
     public Camera camera;
-
-    private TransformAccessArray TransformArray;
-    
-    private NativeArray<CellState> OriginArray;
-    private NativeArray<CellState> ResultArray;
-
-    private JobHandle EvaluateHandle;
-    private JobHandle ApplyHandle;
 
     private EvaluateTransformJob _evaluateJob;
     private ApplyTransformJob _applyJob;
@@ -37,12 +29,7 @@ public class TableJobs : MonoBehaviour
     private Vector3 MouseOld;
 
     private bool OldIsValid = false;
-    
-
-    public struct CellState
-    {
-        public Utils.State Alive;
-    }
+   
 
 
     void Start()
@@ -50,46 +37,24 @@ public class TableJobs : MonoBehaviour
         Utils.Initialize(size, CellSize);
 
         CellTable = Enumerable.Range(0, size * size)
-            .Select(i => Instantiate(CellPrefab, Utils.GeneratePositionByIndex(i), Quaternion.identity).transform).ToArray();
-        
-        TransformArray=new TransformAccessArray(CellTable);
+            .Select(i => Instantiate(CellPrefab, Utils.GeneratePositionByIndex(i), Quaternion.identity)).ToArray();
+ 
 
-        /*OriginArray=new NativeArray<CellState>(size*size,Allocator.Persistent);
-
-        for (var index = 0; index < CellTable.Length; index++)
+        foreach (var cell in CellTable)
         {
-            var cell = CellTable[index];
             cell.transform.SetParent(transform);
-            cell.AliveNextGen = Random.value > 0.7f ? Utils.State.Alive : Utils.State.Dead;
-            cell.Apply();
-
-            OriginArray[index]=new CellState()
-            {
-                Alive = cell.Alive
-            };
-        }*/
+            cell.AliveNext = Random.value > 0.7f;
+            cell.AliveNow = cell.AliveNext;
+            cell.mesh.enabled = cell.AliveNow;
+        }
         
        
     }
 
 
-    private void OnDestroy()
-    {
-        TransformArray.Dispose();
-    }
-
 
     private void Update()
     {
-        
-        _evaluateJob = new EvaluateTransformJob()
-        {
-            OriginTable = CellTable
-        };
-        
-        _applyJob = new ApplyTransformJob();
-        
-        EvaluateHandle=_evaluateJob.Schedule(TransformArray);
 
         camera.orthographicSize = Mathf.Clamp(camera.orthographicSize-(Input.mouseScrollDelta.y * Time.deltaTime * ScrollMultiplier),20f,100f);
 
@@ -111,10 +76,6 @@ public class TableJobs : MonoBehaviour
             MouseOld=Vector3.negativeInfinity;
             OldIsValid = false;
         }
-
-        ApplyHandle = _applyJob.Schedule(TransformArray, EvaluateHandle);
-        
-        ApplyHandle.Complete();
     }
     
 }

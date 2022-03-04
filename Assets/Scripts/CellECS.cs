@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Unity.Entities;
 using UnityEngine;
 
-public class Cell : MonoBehaviour
+public class CellECS : MonoBehaviour
 {
     public bool AliveNow;
     public bool AliveNext;
@@ -16,3 +16,9 @@ public class Cell : MonoBehaviour
     }
 }
 
+public struct CellP : IComponentData
+{
+    public byte AliveNow;
+    public byte AliveNext;
+    public int index;
+}

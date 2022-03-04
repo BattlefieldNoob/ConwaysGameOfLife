@@ -13,9 +13,9 @@ public struct EvaluateJob : IJobParallelFor
 
     public void Execute(int index)
     {
-        ResultTable[index] = new TableJobs.CellState()
+   /*     ResultTable[index] = new TableJobs.CellState()
         {
             Alive = Utils.Evaluate(OriginTable[index].Alive, Utils.NeighbourCount(OriginTable,index))
-        };
+        };*/
     }
 }

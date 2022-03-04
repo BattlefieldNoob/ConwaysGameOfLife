@@ -1,8 +1,11 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Jobs;
 
 public static class Utils
 {
@@ -25,15 +28,15 @@ public static class Utils
     // false = count < 2 || count > 3
     // true = count = 3
     // same = count = 2 
-    public static State Evaluate(State alive,int neighbors)
+    public static bool Evaluate(bool alive,int neighbors)
     {
         if (neighbors < 2 || neighbors > 3)
         {
-            return State.Dead;
+            return false;
         }
         else if (neighbors == 3)
         {
-            return State.Alive;
+            return true;
         }
 
         return alive;
@@ -77,6 +80,31 @@ public static class Utils
         }
 
         return count;
-    }
+    } 
     
+    public static int NeighbourCount([ReadOnly] ComponentArray<CellECS> OriginTable,int cellIndex)
+    {
+        var count = 0;
+        var (xcell, ycell) = IndexToCoordinate(cellIndex);
+
+        for (int i = -1; i < 2; i++)
+        {
+            for (int j = -1; j < 2; j++)
+            {
+                var x = xcell + i;
+                var y = ycell + j;
+                if (!IsPositionValid(x, y) || (x==xcell && y==ycell))
+                    continue;
+
+                count += OriginTable[CoordinateToIndex(x, y)].AliveNow ? 1 : 0;
+            }
+        }
+
+        return count;
+    }
+
+
+    public static Quaternion LifeToQuaternion(bool alive) => new Quaternion(Convert.ToSingle(!alive),0,0,Convert.ToSingle(alive));
+    
+    public static Quaternion NextCycleLifeToQuaternion(Quaternion actual,bool nextCycleAlive)=>new Quaternion(actual.x,0,nextCycleAlive?0.1f:-0.1f,actual.w);
 }

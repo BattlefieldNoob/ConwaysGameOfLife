@@ -24,8 +24,9 @@ public class Table : MonoBehaviour
         foreach (var cell in CellTable)
         {
             cell.transform.SetParent(transform);
-            cell.AliveNextGen=Random.value>0.7f?Utils.State.Alive:Utils.State.Dead;
-            cell.Apply();
+            cell.AliveNext=Random.value>0.7f;
+            cell.AliveNow = cell.AliveNext;
+            cell.mesh.enabled = cell.AliveNow;
         }
 
         StartCoroutine(MainLoop());
@@ -45,7 +46,7 @@ public class Table : MonoBehaviour
                 if (!Utils.IsPositionValid(x, y) || (x==xcell && y==ycell))
                     continue;
 
-                count += CellTable[Utils.CoordinateToIndex(x, y)].Alive==Utils.State.Alive ? 1 : 0;
+                count += CellTable[Utils.CoordinateToIndex(x, y)].AliveNow ? 1 : 0;
             }
         }
 
@@ -92,14 +93,16 @@ public class Table : MonoBehaviour
             foreach (var index in Enumerable.Range(0,size*size))
             {
                 var current = CellTable[index];
-                current.AliveNextGen=Utils.Evaluate(current.Alive,NeighbourCount(index));
+                current.AliveNext=Utils.Evaluate(current.AliveNow,NeighbourCount(index));
             }
 
             yield return null;
             
             foreach (var cell in CellTable)
             {
-                cell.Apply();
+                var alive = cell.AliveNext;
+                cell.AliveNow = alive;
+                cell.mesh.enabled = alive;
             }
 
            // yield return null;
